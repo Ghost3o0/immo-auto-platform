@@ -1,5 +1,7 @@
 'use client';
+
 export const dynamic = 'force-dynamic';
+
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, Filter, X } from 'lucide-react';
@@ -14,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { Pagination } from '@/components/ui/pagination';
 import { VehicleCard } from '@/components/cards/vehicle-card';
 import { vehiclesApi, favoritesApi } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
@@ -394,24 +397,13 @@ export default function VehiclesPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-8 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Précédent
-              </Button>
-              <span className="flex items-center px-4">
-                Page {page} sur {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                Suivant
-              </Button>
+            <div className="mt-8 flex justify-center">
+              <Pagination
+                currentPage={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+                isLoading={isLoading}
+              />
             </div>
           )}
         </>

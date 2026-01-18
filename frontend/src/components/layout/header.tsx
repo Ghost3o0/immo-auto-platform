@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { Menu, X, Home, Car, Heart, User, LogOut, Plus, Moon, Sun } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Menu, X, Home, Car, Heart, User, LogOut, Plus, Moon, Sun, Settings, MessageCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { messagesApi } from '@/lib/api';
 
 const navigation = [
   { name: 'Immobilier', href: '/properties', icon: Home },
@@ -24,9 +25,28 @@ const navigation = [
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadUnreadCount();
+      // Refresh every 30 seconds
+      const interval = setInterval(loadUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  const loadUnreadCount = async () => {
+    try {
+      const response = await messagesApi.getUnreadCount();
+      setUnreadCount(response.data.count);
+    } catch (error) {
+      console.error('Error loading unread count:', error);
+    }
+  };
 
   const getInitials = (name: string) => {
     return name
@@ -40,29 +60,31 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <nav className="container flex h-16 items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">IA</span>
-          </div>
-          <span className="hidden font-bold sm:inline-block">Immo-Auto</span>
-        </Link>
+        {/* Logo + Navigation */}
+        <div className="flex items-center space-x-8">
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+              <span className="text-sm font-bold text-primary-foreground">IA</span>
+            </div>
+            <span className="hidden font-bold sm:inline-block">Immo-Auto</span>
+          </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex md:items-center md:space-x-6">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary',
-                pathname.startsWith(item.href) ? 'text-primary' : 'text-muted-foreground'
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.name}</span>
-            </Link>
-          ))}
+          {/* Desktop Navigation - Next to logo */}
+          <div className="hidden md:flex md:items-center md:space-x-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'flex items-center space-x-1 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted',
+                  pathname.startsWith(item.href) ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Desktop Actions */}
@@ -122,6 +144,25 @@ export function Header() {
                     <Link href="/dashboard/favorites">
                       <Heart className="mr-2 h-4 w-4" />
                       Mes favoris
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/messages" className="flex items-center justify-between">
+                      <span className="flex items-center">
+                        <MessageCircle className="mr-2 h-4 w-4" />
+                        Messages
+                      </span>
+                      {unreadCount > 0 && (
+                        <span className="ml-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-xs text-white">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard/profile">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Paramètres
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

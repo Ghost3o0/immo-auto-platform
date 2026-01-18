@@ -263,6 +263,21 @@ export class PropertiesService {
       throw new ForbiddenException('Vous ne pouvez modifier que vos propres annonces');
     }
 
+    // Valide les transitions d'état
+    const validTransitions: Record<ListingStatus, ListingStatus[]> = {
+      [ListingStatus.DRAFT]: [ListingStatus.ACTIVE, ListingStatus.INACTIVE],
+      [ListingStatus.ACTIVE]: [ListingStatus.DRAFT, ListingStatus.SOLD, ListingStatus.RENTED, ListingStatus.INACTIVE],
+      [ListingStatus.SOLD]: [ListingStatus.INACTIVE],
+      [ListingStatus.RENTED]: [ListingStatus.INACTIVE],
+      [ListingStatus.INACTIVE]: [ListingStatus.ACTIVE, ListingStatus.DRAFT],
+    };
+
+    if (!validTransitions[property.status]?.includes(status)) {
+      throw new ForbiddenException(
+        `Impossible de passer de ${property.status} à ${status}`
+      );
+    }
+
     const updatedProperty = await this.prisma.property.update({
       where: { id },
       data: { status },
@@ -275,7 +290,22 @@ export class PropertiesService {
   }
 
   /**
-   * Détermine le type MIME d'une image base64
+   * Enregistre une vue pour une propriété
+   */
+  async recordView(id: string) {
+    try {
+      await this.prisma.propertyView.create({
+        data: {
+          propertyId: id,
+        },
+      });
+    } catch (error) {
+      // Ignorer les erreurs d'enregistrement de vue
+      // (ex: propriété n'existe pas)
+    }
+  }
+
+  /**   * Détermine le type MIME d'une image base64
    */
   private getMimeType(base64: string): string {
     if (base64.startsWith('data:image/jpeg')) return 'image/jpeg';

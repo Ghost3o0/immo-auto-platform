@@ -54,6 +54,9 @@ export class PropertiesController {
   @ApiResponse({ status: 200, description: 'Propriété trouvée' })
   @ApiResponse({ status: 404, description: 'Propriété non trouvée' })
   async findOne(@Param('id') id: string) {
+    // Enregistrer la vue
+    await this.propertiesService.recordView(id);
+    
     const property = await this.propertiesService.findOne(id);
     return {
       success: true,

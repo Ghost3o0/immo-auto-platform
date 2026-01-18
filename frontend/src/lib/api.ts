@@ -277,6 +277,73 @@ export const usersApi = {
       body: JSON.stringify(body),
     }),
 
+  changePassword: (id: string, body: { currentPassword: string; newPassword: string }) =>
+    fetchApi<{ success: boolean; data: any }>(`/users/${id}/change-password`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  delete: (id: string) =>
+    fetchApi<{ success: boolean }>(`/users/${id}`, {
+      method: 'DELETE',
+    }),
+
   getListings: (id: string) =>
     fetchApi<{ success: boolean; data: { properties: any[]; vehicles: any[] } }>(`/users/${id}/listings`),
+
+  getNotificationPreferences: (id: string) =>
+    fetchApi<{ success: boolean; data: any }>(`/users/${id}/notification-preferences`),
+
+  updateNotificationPreferences: (id: string, body: any) =>
+    fetchApi<{ success: boolean; data: any }>(`/users/${id}/notification-preferences`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+};
+
+/**
+ * API Messages
+ */
+export const messagesApi = {
+  // Créer une conversation
+  createConversation: (data: { sellerId: string; propertyId?: string; vehicleId?: string; message: string }) =>
+    fetchApi<{ success: boolean; data: any }>('/messages/conversations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Récupérer toutes les conversations
+  getConversations: () =>
+    fetchApi<{ success: boolean; data: any[] }>('/messages/conversations'),
+
+  // Récupérer une conversation
+  getConversation: (id: string) =>
+    fetchApi<{ success: boolean; data: any }>(`/messages/conversations/${id}`),
+
+  // Envoyer un message
+  sendMessage: (conversationId: string, content: string) =>
+    fetchApi<{ success: boolean; data: any }>(`/messages/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+
+  // Compter les messages non lus
+  getUnreadCount: () =>
+    fetchApi<{ success: boolean; data: { count: number } }>('/messages/unread'),
+
+  // Marquer comme lu
+  markAsRead: (conversationId: string) =>
+    fetchApi<{ success: boolean }>(`/messages/conversations/${conversationId}/read`, {
+      method: 'POST',
+    }),
+};
+/**
+ * API Analytics
+ */
+export const analyticsApi = {
+  getViewsStats: () =>
+    fetchApi<{ success: boolean; data: { labels: string[]; data: number[]; total: number } }>('/analytics/views'),
+
+  getActivityStats: () =>
+    fetchApi<{ success: boolean; data: { labels: string[]; data: number[]; total: number } }>('/analytics/activity'),
 };

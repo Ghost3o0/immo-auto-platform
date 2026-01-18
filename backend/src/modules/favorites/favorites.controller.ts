@@ -12,6 +12,21 @@ import { CurrentUser } from '../../common/decorators';
 export class FavoritesController {
   constructor(private readonly favoritesService: FavoritesService) {}
 
+  @Get('check')
+  @ApiOperation({ summary: 'Vérifier si un élément est en favori' })
+  @ApiResponse({ status: 200, description: 'Statut du favori' })
+  async isFavorite(
+    @Query('propertyId') propertyId: string,
+    @Query('vehicleId') vehicleId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    const result = await this.favoritesService.isFavorite(userId, propertyId, vehicleId);
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
   @Get()
   @ApiOperation({ summary: 'Récupérer tous les favoris de l\'utilisateur' })
   @ApiResponse({ status: 200, description: 'Liste des favoris' })
@@ -45,21 +60,6 @@ export class FavoritesController {
     return {
       success: true,
       ...result,
-    };
-  }
-
-  @Get('check')
-  @ApiOperation({ summary: 'Vérifier si un élément est en favori' })
-  @ApiResponse({ status: 200, description: 'Statut du favori' })
-  async isFavorite(
-    @Query('propertyId') propertyId: string,
-    @Query('vehicleId') vehicleId: string,
-    @CurrentUser('id') userId: string,
-  ) {
-    const result = await this.favoritesService.isFavorite(userId, propertyId, vehicleId);
-    return {
-      success: true,
-      data: result,
     };
   }
 }

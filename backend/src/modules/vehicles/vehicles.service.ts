@@ -270,6 +270,21 @@ export class VehiclesService {
       throw new ForbiddenException('Vous ne pouvez modifier que vos propres annonces');
     }
 
+    // Valide les transitions d'état
+    const validTransitions: Record<ListingStatus, ListingStatus[]> = {
+      [ListingStatus.DRAFT]: [ListingStatus.ACTIVE, ListingStatus.INACTIVE],
+      [ListingStatus.ACTIVE]: [ListingStatus.DRAFT, ListingStatus.SOLD, ListingStatus.RENTED, ListingStatus.INACTIVE],
+      [ListingStatus.SOLD]: [ListingStatus.INACTIVE],
+      [ListingStatus.RENTED]: [ListingStatus.INACTIVE],
+      [ListingStatus.INACTIVE]: [ListingStatus.ACTIVE, ListingStatus.DRAFT],
+    };
+
+    if (!validTransitions[vehicle.status]?.includes(status)) {
+      throw new ForbiddenException(
+        `Impossible de passer de ${vehicle.status} à ${status}`
+      );
+    }
+
     const updatedVehicle = await this.prisma.vehicle.update({
       where: { id },
       data: { status },
@@ -282,7 +297,22 @@ export class VehiclesService {
   }
 
   /**
-   * Détermine le type MIME d'une image base64
+   * Enregistre une vue pour un véhicule
+   */
+  async recordView(id: string) {
+    try {
+      await this.prisma.vehicleView.create({
+        data: {
+          vehicleId: id,
+        },
+      });
+    } catch (error) {
+      // Ignorer les erreurs d'enregistrement de vue
+      // (ex: véhicule n'existe pas)
+    }
+  }
+
+  /**   * Détermine le type MIME d'une image base64
    */
   private getMimeType(base64: string): string {
     if (base64.startsWith('data:image/jpeg')) return 'image/jpeg';

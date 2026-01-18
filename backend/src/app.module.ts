@@ -9,6 +9,8 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { FavoritesModule } from './modules/favorites/favorites.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { SearchModule } from './modules/search/search.module';
+import { MessagesModule } from './modules/messages/messages.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { SearchModule } from './modules/search/search.module';
     FavoritesModule,
     UploadModule,
     SearchModule,
+    MessagesModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

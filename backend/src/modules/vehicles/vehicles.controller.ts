@@ -54,6 +54,9 @@ export class VehiclesController {
   @ApiResponse({ status: 200, description: 'Véhicule trouvé' })
   @ApiResponse({ status: 404, description: 'Véhicule non trouvé' })
   async findOne(@Param('id') id: string) {
+    // Enregistrer la vue
+    await this.vehiclesService.recordView(id);
+    
     const vehicle = await this.vehiclesService.findOne(id);
     return {
       success: true,

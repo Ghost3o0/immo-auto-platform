@@ -15,12 +15,16 @@ import {
   Car,
   Phone,
   Mail,
+  MessageCircle,
+  Send,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { vehiclesApi, favoritesApi } from '@/lib/api';
+import { vehiclesApi, favoritesApi, messagesApi } from '@/lib/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { formatPrice, formatMileage, formatDate } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 
@@ -57,6 +61,9 @@ export default function VehicleDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [contactMessage, setContactMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [contactDialogOpen, setContactDialogOpen] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -110,6 +117,31 @@ export default function VehicleDetailPage() {
       }
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleSendMessage = async () => {
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
+
+    if (!contactMessage.trim()) return;
+
+    try {
+      setIsSendingMessage(true);
+      const response = await messagesApi.createConversation({
+        sellerId: vehicle.user.id,
+        vehicleId: vehicle.id,
+        message: contactMessage,
+      });
+      setContactDialogOpen(false);
+      setContactMessage('');
+      router.push(`/dashboard/messages?conversation=${response.data.id}`);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -372,6 +404,39 @@ export default function VehicleDetailPage() {
                 </div>
               )}
               <div className="space-y-2">
+                <Dialog open={contactDialogOpen} onOpenChange={setContactDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button className="w-full">
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Envoyer un message
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Contacter {vehicle.user?.name}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="rounded-lg bg-muted p-3">
+                        <p className="text-sm font-medium">{vehicle.title}</p>
+                        <p className="text-sm text-muted-foreground">{formatPrice(vehicle.price, isRent)}</p>
+                      </div>
+                      <Textarea
+                        placeholder="Bonjour, je suis intéressé par votre véhicule..."
+                        value={contactMessage}
+                        onChange={(e) => setContactMessage(e.target.value)}
+                        rows={4}
+                      />
+                      <Button
+                        className="w-full"
+                        onClick={handleSendMessage}
+                        disabled={!contactMessage.trim() || isSendingMessage}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {isSendingMessage ? 'Envoi...' : 'Envoyer le message'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 {vehicle.user?.phone && (
                   <Button variant="outline" className="w-full" asChild>
                     <a href={`tel:${vehicle.user.phone}`}>

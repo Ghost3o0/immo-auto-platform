@@ -103,29 +103,50 @@ Après le seed de la base de données :
 ## Fonctionnalités
 
 ### Utilisateurs
-- Inscription / Connexion
-- Gestion du profil
+- Inscription / Connexion (JWT)
+- Gestion du profil avec avatar
+- Changement de mot de passe sécurisé
+- Préférences de notifications
+- Suppression de compte
 - Authentification JWT
 
 ### Immobilier
 - Liste des propriétés avec filtres (ville, prix, surface, type)
-- Détail d'une propriété
+- Détail d'une propriété avec galerie d'images
 - Création / modification / suppression d'annonces
-- Upload d'images
+- Gestion des statuts (Brouillon, Active, Vendu, Loué, Inactive)
+- Upload d'images (max 10)
+- Pagination
 
 ### Véhicules
 - Liste des véhicules avec filtres (marque, prix, année, kilométrage)
-- Détail d'un véhicule
+- Détail d'un véhicule avec galerie d'images
 - Création / modification / suppression d'annonces
-- Upload d'images
+- Gestion des statuts (Brouillon, Active, Vendu, Loué, Inactive)
+- Upload d'images (max 10)
+- Pagination
+
+### Messagerie
+- Conversations entre acheteurs et vendeurs
+- Contact direct depuis les annonces
+- Compteur de messages non lus
+- Historique des conversations
 
 ### Favoris
 - Ajouter / retirer des favoris
-- Consulter ses favoris
+- Consulter ses favoris par catégorie
+
+### Dashboard
+- Statistiques de vues (graphiques Chart.js)
+- Statistiques d'activité
+- Gestion des annonces
+- Messages
+- Favoris
 
 ### Recherche
 - Recherche globale
 - Suggestions autocomplete
+- Filtres combinés
 
 ## API Endpoints
 
@@ -158,6 +179,26 @@ Après le seed de la base de données :
 - `GET /api/search` - Recherche globale
 - `GET /api/search/suggestions` - Suggestions autocomplete
 
+### Messages
+- `GET /api/messages/conversations` - Liste des conversations (auth)
+- `GET /api/messages/conversations/:id` - Détail d'une conversation (auth)
+- `POST /api/messages/conversations` - Créer une conversation (auth)
+- `POST /api/messages/conversations/:id/messages` - Envoyer un message (auth)
+- `GET /api/messages/unread-count` - Compteur de messages non lus (auth)
+
+### Analytics
+- `GET /api/analytics/views` - Statistiques de vues (auth)
+- `GET /api/analytics/activity` - Statistiques d'activité (auth)
+
+### Users
+- `GET /api/users/:id` - Détail utilisateur
+- `PATCH /api/users/:id` - Modifier profil (auth)
+- `DELETE /api/users/:id` - Supprimer compte (auth)
+- `PATCH /api/users/:id/password` - Changer mot de passe (auth)
+- `GET /api/users/:id/listings` - Annonces de l'utilisateur
+- `GET /api/users/:id/notification-preferences` - Préférences notifications (auth)
+- `PATCH /api/users/:id/notification-preferences` - Modifier préférences (auth)
+
 ## Documentation API
 
 Swagger UI disponible à : `http://localhost:3001/api/docs`
@@ -189,10 +230,16 @@ npm run lint             # Lint tous les packages
 ```
 src/
 ├── app/                 # Pages Next.js (App Router)
+│   ├── auth/           # Pages d'authentification
+│   ├── dashboard/      # Dashboard utilisateur
+│   ├── properties/     # Annonces immobilières
+│   ├── vehicles/       # Annonces véhicules
+│   └── listings/       # Gestion des annonces
 ├── components/          # Composants React
-│   ├── ui/             # Composants UI de base
+│   ├── ui/             # Composants UI de base (Shadcn)
 │   ├── layout/         # Header, Footer
 │   ├── cards/          # Cards (Property, Vehicle)
+│   ├── charts/         # Graphiques (Chart.js)
 │   └── forms/          # Formulaires
 ├── contexts/           # Contextes React (Auth)
 ├── hooks/              # Hooks personnalisés
@@ -209,6 +256,8 @@ src/
 │   ├── properties/    # Propriétés
 │   ├── vehicles/      # Véhicules
 │   ├── favorites/     # Favoris
+│   ├── messages/      # Messagerie
+│   ├── analytics/     # Statistiques
 │   ├── upload/        # Upload d'images
 │   └── search/        # Recherche
 ├── common/            # Guards, Decorators, Filters

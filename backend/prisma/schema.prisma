@@ -79,6 +79,14 @@ model User {
   vehicles   Vehicle[]
   favorites  Favorite[]
 
+  // Messagerie
+  buyerConversations  Conversation[] @relation("BuyerConversations")
+  sellerConversations Conversation[] @relation("SellerConversations")
+  messages            Message[]
+
+  // Préférences
+  notificationPreferences NotificationPreference?
+
   @@map("users")
 }
 
@@ -107,8 +115,10 @@ model Property {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  images    Image[]
-  favorites Favorite[]
+  images        Image[]
+  favorites     Favorite[]
+  conversations Conversation[]
+  views         PropertyView[]
 
   @@index([city])
   @@index([price])
@@ -144,8 +154,10 @@ model Vehicle {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  images    Image[]
-  favorites Favorite[]
+  images        Image[]
+  favorites     Favorite[]
+  conversations Conversation[]
+  views         VehicleView[]
 
   @@index([brand])
   @@index([price])
@@ -188,4 +200,89 @@ model Favorite {
   @@unique([userId, propertyId])
   @@unique([userId, vehicleId])
   @@map("favorites")
+}
+
+model Conversation {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Participants
+  buyerId  String
+  buyer    User   @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  sellerId String
+  seller   User   @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Annonce concernée (optionnel car peut être supprimée)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  messages Message[]
+
+  @@unique([buyerId, sellerId, propertyId])
+  @@unique([buyerId, sellerId, vehicleId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("conversations")
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model PropertyView {
+  id        String   @id @default(uuid())
+  propertyId String
+  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime @default(now())
+
+  @@index([propertyId])
+  @@index([viewedAt])
+  @@map("property_views")
+}
+
+model VehicleView {
+  id        String   @id @default(uuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime @default(now())
+
+  @@index([vehicleId])
+  @@index([viewedAt])
+  @@map("vehicle_views")
+}
+
+model NotificationPreference {
+  id     String  @id @default(uuid())
+  userId String  @unique
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Notification types
+  emailOnNewMessage      Boolean @default(true)
+  emailOnNewFavorite     Boolean @default(true)
+  emailOnListingViews    Boolean @default(true)
+  emailOnListingExpiry   Boolean @default(true)
+  pushNotifications      Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notification_preferences")
 }
