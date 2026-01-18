@@ -1,0 +1,33 @@
+{
+  "name": "immo-auto-platform",
+  "version": "1.0.0",
+  "description": "Plateforme de vente et location d'immobilier et de véhicules",
+  "private": true,
+  "packageManager": "pnpm@8.15.0",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "pnpm --filter './frontend' --filter './backend' --parallel dev",
+    "build": "turbo run build",
+    "start": "pnpm --filter './frontend' --filter './backend' --parallel start",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "build:frontend": "pnpm --filter frontend build",
+    "build:backend": "pnpm --filter backend build",
+    "prisma:migrate": "pnpm --filter backend prisma:migrate",
+    "prisma:generate": "pnpm --filter backend prisma:generate",
+    "prisma:seed": "pnpm --filter backend prisma:seed",
+    "prisma:studio": "pnpm --filter backend prisma:studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

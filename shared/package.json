@@ -1,0 +1,14 @@
+{
+  "name": "@immo-auto/shared",
+  "version": "1.0.0",
+  "description": "Shared types for immo-auto-platform",
+  "main": "types/index.ts",
+  "types": "types/index.ts",
+  "scripts": {
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  }
+}
