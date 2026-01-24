@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -95,7 +95,7 @@ const transmissions = [
   { value: 'SEMI_AUTOMATIC', label: 'Semi-automatique' },
 ];
 
-export default function NewListingPage() {
+function NewListingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isLoading, isAuthenticated } = useAuth();
@@ -707,5 +707,13 @@ export default function NewListingPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function NewListingPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto py-8 text-center">Chargement...</div>}>
+      <NewListingContent />
+    </Suspense>
   );
 }
