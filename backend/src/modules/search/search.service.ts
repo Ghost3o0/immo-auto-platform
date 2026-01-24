@@ -86,8 +86,37 @@ export class SearchService {
    * Suggestions pour l'autocomplete
    */
   async getSuggestions(query: string) {
+    // Return popular suggestions when query is empty or too short
     if (!query || query.length < 2) {
-      return [];
+      const [popularCities, popularBrands] = await Promise.all([
+        this.prisma.property.groupBy({
+          by: ['city'],
+          where: { status: ListingStatus.ACTIVE },
+          _count: { city: true },
+          orderBy: { _count: { city: 'desc' } },
+          take: 5,
+        }),
+        this.prisma.vehicle.groupBy({
+          by: ['brand'],
+          where: { status: ListingStatus.ACTIVE },
+          _count: { brand: true },
+          orderBy: { _count: { brand: 'desc' } },
+          take: 5,
+        }),
+      ]);
+
+      return [
+        ...popularCities.map((c) => ({
+          type: 'city' as const,
+          id: null,
+          label: c.city,
+        })),
+        ...popularBrands.map((b) => ({
+          type: 'brand' as const,
+          id: null,
+          label: b.brand,
+        })),
+      ].slice(0, 8);
     }
 
     const [properties, vehicles, cities] = await Promise.all([

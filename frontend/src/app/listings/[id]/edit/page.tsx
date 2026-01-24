@@ -117,6 +117,7 @@ export default function EditListingPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const propertyForm = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
@@ -137,6 +138,36 @@ export default function EditListingPage() {
       loadListing(params.id as string);
     }
   }, [params.id, isAuthenticated]);
+
+  // Track unsaved changes
+  useEffect(() => {
+    const propertyDirty = propertyForm.formState.isDirty;
+    const vehicleDirty = vehicleForm.formState.isDirty;
+    const imagesDirty = images.length > 0 || (listing?.images?.length !== existingImages.length);
+    setHasUnsavedChanges(propertyDirty || vehicleDirty || imagesDirty);
+  }, [propertyForm.formState.isDirty, vehicleForm.formState.isDirty, images, existingImages, listing]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const handleNavigateBack = () => {
+    if (hasUnsavedChanges) {
+      if (confirm('Vous avez des modifications non sauvegardées. Voulez-vous vraiment quitter ?')) {
+        router.back();
+      }
+    } else {
+      router.back();
+    }
+  };
 
   const loadListing = async (id: string) => {
     setIsLoading(true);
@@ -363,7 +394,7 @@ export default function EditListingPage() {
 
   return (
     <div className="container py-8">
-      <Button variant="ghost" className="mb-4" onClick={() => router.back()}>
+      <Button variant="ghost" className="mb-4" onClick={handleNavigateBack}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Retour
       </Button>
@@ -651,7 +682,7 @@ export default function EditListingPage() {
               )}
             </Button>
             <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button type="button" variant="outline" onClick={handleNavigateBack}>
                 Annuler
               </Button>
               <Button type="submit" disabled={propertyForm.formState.isSubmitting}>
@@ -963,7 +994,7 @@ export default function EditListingPage() {
               )}
             </Button>
             <div className="flex gap-4">
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button type="button" variant="outline" onClick={handleNavigateBack}>
                 Annuler
               </Button>
               <Button type="submit" disabled={vehicleForm.formState.isSubmitting}>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Menu, X, Home, Car, Heart, User, LogOut, Plus, Moon, Sun, Settings, MessageCircle } from 'lucide-react';
+import { Home, Car, Heart, User, LogOut, Plus, Moon, Sun, Settings, MessageCircle, Shield } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,6 @@ const navigation = [
 ];
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
@@ -33,7 +32,6 @@ export function Header() {
   useEffect(() => {
     if (isAuthenticated) {
       loadUnreadCount();
-      // Refresh every 30 seconds
       const interval = setInterval(loadUnreadCount, 30000);
       return () => clearInterval(interval);
     }
@@ -44,7 +42,7 @@ export function Header() {
       const response = await messagesApi.getUnreadCount();
       setUnreadCount(response.data.count);
     } catch (error) {
-      console.error('Error loading unread count:', error);
+      // Silently fail - don't spam console on network errors during polling
     }
   };
 
@@ -58,41 +56,40 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <nav className="container flex h-16 items-center justify-between">
-        {/* Logo + Navigation */}
-        <div className="flex items-center space-x-8">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <span className="text-sm font-bold text-primary-foreground">IA</span>
-            </div>
-            <span className="hidden font-bold sm:inline-block">Immo-Auto</span>
-          </Link>
-
-          {/* Desktop Navigation - Next to logo */}
-          <div className="hidden md:flex md:items-center md:space-x-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'flex items-center space-x-1 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted',
-                  pathname.startsWith(item.href) ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.name}</span>
-              </Link>
-            ))}
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 safe-area-top">
+      <nav className="container flex h-14 items-center justify-between md:h-16">
+        {/* Logo */}
+        <Link href="/" className="flex items-center space-x-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <span className="text-sm font-bold text-primary-foreground">IA</span>
           </div>
+          <span className="font-bold">Immo-Auto</span>
+        </Link>
+
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex md:items-center md:space-x-1">
+          {navigation.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={cn(
+                'flex items-center space-x-1 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted',
+                pathname.startsWith(item.href) ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+              )}
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.name}</span>
+            </Link>
+          ))}
         </div>
 
-        {/* Desktop Actions */}
-        <div className="hidden md:flex md:items-center md:space-x-4">
+        {/* Actions */}
+        <div className="flex items-center space-x-2 md:space-x-4">
           {/* Theme Toggle */}
           <Button
             variant="ghost"
             size="icon"
+            className="h-9 w-9"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           >
             <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -102,22 +99,33 @@ export function Header() {
 
           {isAuthenticated ? (
             <>
-              <Button asChild>
+              {/* Desktop: Full button, Mobile: Icon only */}
+              <Button asChild className="hidden md:inline-flex">
                 <Link href="/listings/new">
                   <Plus className="mr-2 h-4 w-4" />
                   Déposer une annonce
                 </Link>
               </Button>
+              <Button asChild size="icon" className="h-9 w-9 md:hidden">
+                <Link href="/listings/new">
+                  <Plus className="h-5 w-5" />
+                </Link>
+              </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full md:h-10 md:w-10">
+                    <Avatar className="h-8 w-8 md:h-9 md:w-9">
                       {user?.avatar ? (
                         <AvatarImage src={user.avatar} alt={user.name} />
                       ) : null}
-                      <AvatarFallback>{user ? getInitials(user.name) : 'U'}</AvatarFallback>
+                      <AvatarFallback className="text-xs">{user ? getInitials(user.name) : 'U'}</AvatarFallback>
                     </Avatar>
+                    {unreadCount > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-medium text-white md:hidden">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
@@ -165,6 +173,17 @@ export function Header() {
                       Paramètres
                     </Link>
                   </DropdownMenuItem>
+                  {user?.role === 'ADMIN' && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="text-purple-600">
+                          <Shield className="mr-2 h-4 w-4" />
+                          Gérer le site web
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
@@ -175,99 +194,19 @@ export function Header() {
             </>
           ) : (
             <>
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" asChild className="hidden md:inline-flex">
                 <Link href="/login">Connexion</Link>
               </Button>
-              <Button asChild>
-                <Link href="/register">Inscription</Link>
+              <Button asChild size="sm" className="h-9">
+                <Link href="/register">
+                  <span className="hidden sm:inline">Inscription</span>
+                  <span className="sm:hidden">S'inscrire</span>
+                </Link>
               </Button>
             </>
           )}
         </div>
-
-        {/* Mobile menu button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-        >
-          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
       </nav>
-
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <div className="border-t md:hidden">
-          <div className="container space-y-1 py-4">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium',
-                  pathname.startsWith(item.href)
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted'
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.name}</span>
-              </Link>
-            ))}
-            <div className="border-t pt-4">
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    href="/listings/new"
-                    className="flex items-center space-x-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Déposer une annonce</span>
-                  </Link>
-                  <Link
-                    href="/dashboard"
-                    className="mt-2 flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <User className="h-4 w-4" />
-                    <span>Tableau de bord</span>
-                  </Link>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setMobileMenuOpen(false);
-                    }}
-                    className="flex w-full items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-muted"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Déconnexion</span>
-                  </button>
-                </>
-              ) : (
-                <div className="flex flex-col space-y-2">
-                  <Link
-                    href="/login"
-                    className="rounded-md px-3 py-2 text-center text-sm font-medium hover:bg-muted"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Connexion
-                  </Link>
-                  <Link
-                    href="/register"
-                    className="rounded-md bg-primary px-3 py-2 text-center text-sm font-medium text-primary-foreground"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    Inscription
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

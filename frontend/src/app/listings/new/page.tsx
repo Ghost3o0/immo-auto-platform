@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -97,8 +97,10 @@ const transmissions = [
 
 export default function NewListingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isLoading, isAuthenticated } = useAuth();
-  const [listingType, setListingType] = useState<'property' | 'vehicle'>('property');
+  const initialType = searchParams.get('type') === 'vehicle' ? 'vehicle' : 'property';
+  const [listingType, setListingType] = useState<'property' | 'vehicle'>(initialType);
   const [images, setImages] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,6 +109,14 @@ export default function NewListingPage() {
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Update listing type when URL param changes
+  useEffect(() => {
+    const typeParam = searchParams.get('type');
+    if (typeParam === 'vehicle' || typeParam === 'property') {
+      setListingType(typeParam);
+    }
+  }, [searchParams]);
 
   const propertyForm = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),

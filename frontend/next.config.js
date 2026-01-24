@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Skip prerendering errors for dynamic routes using useSearchParams
-  skipDynamicErrorDiskRevalidate: true,
   images: {
     remotePatterns: [
       {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,7 @@ const listingTypes = [
   { value: 'RENT', label: 'Location' },
 ];
 
-export default function VehiclesPage() {
+function VehiclesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
@@ -143,7 +143,7 @@ export default function VehiclesPage() {
 
     try {
       if (favorites.has(vehicleId)) {
-        const checkResponse = await favoritesApi.check(undefined, vehicleId);
+        const checkResponse = await favoritesApi.check({ vehicleId });
         if (checkResponse.data.favoriteId) {
           await favoritesApi.remove(checkResponse.data.favoriteId);
           setFavorites((prev) => {
@@ -407,5 +407,35 @@ export default function VehiclesPage() {
         </>
       )}
     </div>
+  );
+}
+
+function VehiclesPageLoading() {
+  return (
+    <div className="container py-8">
+      <div className="mb-8">
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="mt-2 h-4 w-32 animate-pulse rounded bg-muted" />
+      </div>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="animate-pulse rounded-lg border bg-card">
+            <div className="aspect-[4/3] bg-muted" />
+            <div className="p-4">
+              <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
+              <div className="h-6 w-1/3 rounded bg-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function VehiclesPage() {
+  return (
+    <Suspense fallback={<VehiclesPageLoading />}>
+      <VehiclesContent />
+    </Suspense>
   );
 }

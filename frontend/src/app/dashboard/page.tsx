@@ -94,8 +94,9 @@ export default function DashboardPage() {
       }));
     } catch (error) {
       console.error('Error loading chart data:', error);
-      // Fallback to empty data
+      // Fallback to zero data for better visualization
       const labels: string[] = [];
+      const zeroData: number[] = [];
       const today = new Date();
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
@@ -103,11 +104,12 @@ export default function DashboardPage() {
         labels.push(
           date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })
         );
+        zeroData.push(0);
       }
       setChartData((prev) => ({
         ...prev,
-        views: { labels, data: [] },
-        activity: { labels, data: [] },
+        views: { labels, data: zeroData },
+        activity: { labels, data: zeroData },
       }));
     }
   };
@@ -280,14 +282,14 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link href="/listings/new">
-                <Plus className="mr-2 h-4 w-4" />
+              <Link href="/listings/new?type=property">
+                <Home className="mr-2 h-4 w-4" />
                 Déposer une annonce immobilière
               </Link>
             </Button>
             <Button variant="outline" className="w-full justify-start" asChild>
-              <Link href="/listings/new">
-                <Plus className="mr-2 h-4 w-4" />
+              <Link href="/listings/new?type=vehicle">
+                <Car className="mr-2 h-4 w-4" />
                 Déposer une annonce véhicule
               </Link>
             </Button>

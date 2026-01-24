@@ -11,6 +11,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { SearchModule } from './modules/search/search.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     SearchModule,
     MessagesModule,
     AnalyticsModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

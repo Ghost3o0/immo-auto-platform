@@ -16,9 +16,10 @@ enum UserRole {
   ADMIN
 }
 
-enum ListingType {
-  SALE
-  RENT
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
 }
 
 enum ListingStatus {
@@ -29,15 +30,23 @@ enum ListingStatus {
   INACTIVE
 }
 
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
 enum PropertyType {
   APARTMENT
   HOUSE
-  VILLA
-  STUDIO
-  LOFT
   LAND
   COMMERCIAL
-  OFFICE
+  OTHER
+}
+
+enum ListingType {
+  SALE
+  RENT
 }
 
 enum VehicleType {
@@ -45,8 +54,7 @@ enum VehicleType {
   MOTORCYCLE
   TRUCK
   VAN
-  SUV
-  SCOOTER
+  OTHER
 }
 
 enum FuelType {
@@ -55,25 +63,28 @@ enum FuelType {
   ELECTRIC
   HYBRID
   LPG
+  OTHER
 }
 
 enum Transmission {
   MANUAL
   AUTOMATIC
-  SEMI_AUTOMATIC
 }
 
 // Models
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  phone     String?
-  avatar    String?  @db.Text
-  role      UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String     @id @default(uuid())
+  email           String     @unique
+  password        String
+  name            String
+  phone           String?
+  avatar          String?
+  role            UserRole   @default(USER)
+  status          UserStatus @default(ACTIVE)
+  suspendedAt     DateTime?
+  suspendedReason String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   properties Property[]
   vehicles   Vehicle[]
@@ -87,13 +98,18 @@ model User {
   // Préférences
   notificationPreferences NotificationPreference?
 
+  // Admin relations
+  adminLogs AdminLog[] @relation("AdminUser")
+  reports   Report[]   @relation("Reporter")
+
+  @@index([status])
   @@map("users")
 }
 
 model Property {
   id          String        @id @default(uuid())
   title       String
-  description String        @db.Text
+  description String
   price       Float
   address     String
   city        String
@@ -108,7 +124,7 @@ model Property {
   type        PropertyType
   listingType ListingType
   status      ListingStatus @default(ACTIVE)
-  features    String[]
+  features    String[]      @default([])
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -119,6 +135,7 @@ model Property {
   favorites     Favorite[]
   conversations Conversation[]
   views         PropertyView[]
+  reports       Report[]
 
   @@index([city])
   @@index([price])
@@ -131,7 +148,7 @@ model Property {
 model Vehicle {
   id           String        @id @default(uuid())
   title        String
-  description  String        @db.Text
+  description  String
   price        Float
   brand        String
   model        String
@@ -146,7 +163,7 @@ model Vehicle {
   type         VehicleType
   listingType  ListingType
   status       ListingStatus @default(ACTIVE)
-  features     String[]
+  features     String[]      @default([])
   city         String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -158,6 +175,7 @@ model Vehicle {
   favorites     Favorite[]
   conversations Conversation[]
   views         VehicleView[]
+  reports       Report[]
 
   @@index([brand])
   @@index([price])
@@ -170,7 +188,7 @@ model Vehicle {
 
 model Image {
   id        String   @id @default(uuid())
-  data      String   @db.Text // Base64 encoded image
+  data      String
   mimeType  String
   filename  String?
   createdAt DateTime @default(now())
@@ -208,8 +226,8 @@ model Conversation {
   updatedAt DateTime @updatedAt
 
   // Participants
-  buyerId  String
-  buyer    User   @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  buyerId String
+  buyer   User   @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
 
   sellerId String
   seller   User   @relation("SellerConversations", fields: [sellerId], references: [id], onDelete: Cascade)
@@ -232,7 +250,7 @@ model Conversation {
 
 model Message {
   id        String   @id @default(uuid())
-  content   String   @db.Text
+  content   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -248,10 +266,10 @@ model Message {
 }
 
 model PropertyView {
-  id        String   @id @default(uuid())
+  id         String   @id @default(uuid())
   propertyId String
-  property  Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  viewedAt  DateTime @default(now())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  viewedAt   DateTime @default(now())
 
   @@index([propertyId])
   @@index([viewedAt])
@@ -270,19 +288,65 @@ model VehicleView {
 }
 
 model NotificationPreference {
-  id     String  @id @default(uuid())
-  userId String  @unique
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Notification types
-  emailOnNewMessage      Boolean @default(true)
-  emailOnNewFavorite     Boolean @default(true)
-  emailOnListingViews    Boolean @default(true)
-  emailOnListingExpiry   Boolean @default(true)
-  pushNotifications      Boolean @default(true)
-  
+  emailOnNewMessage    Boolean @default(true)
+  emailOnNewFavorite   Boolean @default(true)
+  emailOnListingViews  Boolean @default(true)
+  emailOnListingExpiry Boolean @default(true)
+  pushNotifications    Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("notification_preferences")
+}
+
+// Admin models
+model Report {
+  id           String       @id @default(uuid())
+  reason       String
+  status       ReportStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  resolution   String?
+
+  // Reporter
+  reporterId String
+  reporter   User   @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  // Target (one of these must be set)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([reporterId])
+  @@index([propertyId])
+  @@index([vehicleId])
+  @@map("reports")
+}
+
+model AdminLog {
+  id         String   @id @default(uuid())
+  action     String
+  targetType String
+  targetId   String
+  details    String?
+  createdAt  DateTime @default(now())
+
+  // Admin who performed the action
+  adminId String
+  admin   User   @relation("AdminUser", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("admin_logs")
 }

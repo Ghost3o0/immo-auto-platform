@@ -1,4 +1,13 @@
-import { PrismaClient, UserRole, PropertyType, VehicleType, ListingType, FuelType, Transmission, ListingStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  UserRole,
+  ListingStatus,
+  PropertyType,
+  ListingType,
+  VehicleType,
+  FuelType,
+  Transmission
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -89,7 +98,7 @@ async function main() {
       rooms: 1,
       bedrooms: 0,
       bathrooms: 1,
-      type: PropertyType.STUDIO,
+      type: PropertyType.APARTMENT,
       listingType: ListingType.RENT,
       features: ['Meublé', 'Internet', 'Charges comprises'],
       userId: admin.id,
@@ -106,7 +115,7 @@ async function main() {
       rooms: 4,
       bedrooms: 2,
       bathrooms: 2,
-      type: PropertyType.LOFT,
+      type: PropertyType.OTHER,
       listingType: ListingType.SALE,
       features: ['Hauteur sous plafond', 'Parquet', 'Climatisation', 'Parking'],
       userId: user.id,
@@ -123,7 +132,7 @@ async function main() {
       rooms: 7,
       bedrooms: 5,
       bathrooms: 3,
-      type: PropertyType.VILLA,
+      type: PropertyType.HOUSE,
       listingType: ListingType.SALE,
       features: ['Vue mer', 'Piscine', 'Jardin', 'Climatisation', 'Domotique', 'Garage'],
       userId: admin.id,
@@ -191,7 +200,7 @@ async function main() {
       rooms: 5,
       bedrooms: 0,
       bathrooms: 2,
-      type: PropertyType.OFFICE,
+      type: PropertyType.COMMERCIAL,
       listingType: ListingType.RENT,
       features: ['Climatisation', 'Fibre optique', 'Parking', 'Accès handicapé', 'Sécurité 24h'],
       userId: admin.id,
@@ -288,7 +297,7 @@ async function main() {
       doors: 5,
       seats: 5,
       power: 225,
-      type: VehicleType.SUV,
+      type: VehicleType.CAR,
       listingType: ListingType.SALE,
       city: 'Bordeaux',
       features: ['i-Cockpit', 'Night Vision', 'Grip Control', 'Hayon électrique', 'Chargeur embarqué'],
@@ -408,7 +417,7 @@ async function main() {
       doors: 0,
       seats: 2,
       power: 12,
-      type: VehicleType.SCOOTER,
+      type: VehicleType.MOTORCYCLE,
       listingType: ListingType.SALE,
       city: 'Montpellier',
       features: ['ABS', 'Tablier', 'Top case', 'Pare-brise'],

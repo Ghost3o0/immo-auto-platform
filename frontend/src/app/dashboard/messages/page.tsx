@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Send, ArrowLeft, MessageCircle, Home, Car } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,7 +39,7 @@ interface ConversationDetail {
   messages: Message[];
 }
 
-export default function MessagesPage() {
+function MessagesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -66,10 +66,10 @@ export default function MessagesPage() {
 
   useEffect(() => {
     const conversationId = searchParams.get('conversation');
-    if (conversationId && conversations.length > 0) {
+    if (conversationId && !selectedConversation && !isLoadingMessages) {
       loadConversation(conversationId);
     }
-  }, [searchParams, conversations]);
+  }, [searchParams]);
 
   useEffect(() => {
     scrollToBottom();
@@ -111,19 +111,28 @@ export default function MessagesPage() {
     e.preventDefault();
     if (!newMessage.trim() || !selectedConversation || isSending) return;
 
+    const messageContent = newMessage.trim();
+    setNewMessage(''); // Reset immédiatement pour UX
+
     try {
       setIsSending(true);
-      const response = await messagesApi.sendMessage(selectedConversation.id, newMessage);
-      setSelectedConversation({
-        ...selectedConversation,
-        messages: [...selectedConversation.messages, response.data],
+      const response = await messagesApi.sendMessage(selectedConversation.id, messageContent);
+
+      // Mise à jour optimiste du state local
+      setSelectedConversation((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: [...prev.messages, response.data],
+        };
       });
-      setNewMessage('');
+
+      // Rafraîchir les conversations en arrière-plan (sans bloquer)
       loadConversations();
-      // Rafraîchir le compteur de messages non lus
-      refetchUnreadCount();
     } catch (error) {
       console.error('Error sending message:', error);
+      // Restaurer le message en cas d'erreur
+      setNewMessage(messageContent);
     } finally {
       setIsSending(false);
     }
@@ -358,5 +367,25 @@ export default function MessagesPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function MessagesPageLoading() {
+  return (
+    <div className="container py-8">
+      <div className="mb-6">
+        <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+        <div className="mt-2 h-4 w-64 animate-pulse rounded bg-muted" />
+      </div>
+      <div className="h-[600px] animate-pulse rounded-lg bg-muted" />
+    </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={<MessagesPageLoading />}>
+      <MessagesContent />
+    </Suspense>
   );
 }

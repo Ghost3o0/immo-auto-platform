@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
@@ -36,7 +36,7 @@ const statusColors: Record<string, 'default' | 'secondary' | 'destructive' | 'su
   INACTIVE: 'destructive',
 };
 
-export default function ListingsPage() {
+function ListingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -256,5 +256,29 @@ export default function ListingsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function ListingsPageLoading() {
+  return (
+    <div className="container py-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="h-8 w-32 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-40 animate-pulse rounded bg-muted" />
+      </div>
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="h-32 animate-pulse rounded-lg bg-muted" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function ListingsPage() {
+  return (
+    <Suspense fallback={<ListingsPageLoading />}>
+      <ListingsContent />
+    </Suspense>
   );
 }

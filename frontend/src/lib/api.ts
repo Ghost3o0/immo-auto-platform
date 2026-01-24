@@ -243,9 +243,9 @@ export const favoritesApi = {
       method: 'DELETE',
     }),
 
-  check: (propertyId?: string, vehicleId?: string) =>
+  check: (params: { propertyId?: string; vehicleId?: string }) =>
     fetchApi<{ success: boolean; data: { isFavorite: boolean; favoriteId?: string } }>('/favorites/check', {
-      params: { propertyId, vehicleId },
+      params,
     }),
 };
 
@@ -346,4 +346,44 @@ export const analyticsApi = {
 
   getActivityStats: () =>
     fetchApi<{ success: boolean; data: { labels: string[]; data: number[]; total: number } }>('/analytics/activity'),
+};
+
+/**
+ * API Client générique pour les appels API
+ * Compatible avec le format axios-like
+ */
+export const apiClient = {
+  get: async <T = any>(endpoint: string, options?: { params?: Record<string, any> }): Promise<{ data: T }> => {
+    const data = await fetchApi<T>(endpoint, { params: options?.params });
+    return { data };
+  },
+
+  post: async <T = any>(endpoint: string, body?: any): Promise<{ data: T }> => {
+    const data = await fetchApi<T>(endpoint, {
+      method: 'POST',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  },
+
+  patch: async <T = any>(endpoint: string, body?: any): Promise<{ data: T }> => {
+    const data = await fetchApi<T>(endpoint, {
+      method: 'PATCH',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  },
+
+  put: async <T = any>(endpoint: string, body?: any): Promise<{ data: T }> => {
+    const data = await fetchApi<T>(endpoint, {
+      method: 'PUT',
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  },
+
+  delete: async <T = any>(endpoint: string): Promise<{ data: T }> => {
+    const data = await fetchApi<T>(endpoint, { method: 'DELETE' });
+    return { data };
+  },
 };

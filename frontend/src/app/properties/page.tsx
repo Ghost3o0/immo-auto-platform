@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +16,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { PropertyCard } from '@/components/cards/property-card';
+import { Drawer } from '@/components/ui/drawer';
 import { propertiesApi, favoritesApi } from '@/lib/api';
 import { useAuth } from '@/contexts/auth-context';
 
@@ -35,7 +36,7 @@ const listingTypes = [
   { value: 'RENT', label: 'Location' },
 ];
 
-export default function PropertiesPage() {
+function PropertiesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated } = useAuth();
@@ -69,33 +70,7 @@ export default function PropertiesPage() {
   }, [page, isAuthenticated]);
 
   const loadProperties = async () => {
-    setIsLoading(true);
-    try {
-      const params: any = {
-        page,
-        limit: 12,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-      };
-
-      if (filters.search) params.search = filters.search;
-      if (filters.city) params.city = filters.city;
-      if (filters.type) params.type = filters.type;
-      if (filters.listingType) params.listingType = filters.listingType;
-      if (filters.minPrice) params.minPrice = Number(filters.minPrice);
-      if (filters.maxPrice) params.maxPrice = Number(filters.maxPrice);
-      if (filters.minSurface) params.minSurface = Number(filters.minSurface);
-      if (filters.maxSurface) params.maxSurface = Number(filters.maxSurface);
-
-      const response = await propertiesApi.getAll(params);
-      setProperties(response.data);
-      setTotal(response.total);
-      setTotalPages(response.totalPages);
-    } catch (error) {
-      console.error('Error loading properties:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    loadPropertiesWithFilters(filters, page);
   };
 
   const loadFavorites = async () => {
@@ -108,9 +83,40 @@ export default function PropertiesPage() {
     }
   };
 
-  const handleSearch = () => {
+  const handleSearch = (newFilters?: typeof filters) => {
+    const searchFilters = newFilters || filters;
     setPage(1);
-    loadProperties();
+    loadPropertiesWithFilters(searchFilters, 1);
+  };
+
+  const loadPropertiesWithFilters = async (searchFilters: typeof filters, currentPage: number) => {
+    setIsLoading(true);
+    try {
+      const params: any = {
+        page: currentPage,
+        limit: 12,
+        sortBy: searchFilters.sortBy,
+        sortOrder: searchFilters.sortOrder,
+      };
+
+      if (searchFilters.search) params.search = searchFilters.search;
+      if (searchFilters.city) params.city = searchFilters.city;
+      if (searchFilters.type) params.type = searchFilters.type;
+      if (searchFilters.listingType) params.listingType = searchFilters.listingType;
+      if (searchFilters.minPrice) params.minPrice = Number(searchFilters.minPrice);
+      if (searchFilters.maxPrice) params.maxPrice = Number(searchFilters.maxPrice);
+      if (searchFilters.minSurface) params.minSurface = Number(searchFilters.minSurface);
+      if (searchFilters.maxSurface) params.maxSurface = Number(searchFilters.maxSurface);
+
+      const response = await propertiesApi.getAll(params);
+      setProperties(response.data);
+      setTotal(response.total);
+      setTotalPages(response.totalPages);
+    } catch (error) {
+      console.error('Error loading properties:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFavorite = async (propertyId: string) => {
@@ -121,7 +127,7 @@ export default function PropertiesPage() {
 
     try {
       if (favorites.has(propertyId)) {
-        const checkResponse = await favoritesApi.check(propertyId);
+        const checkResponse = await favoritesApi.check({ propertyId });
         if (checkResponse.data.favoriteId) {
           await favoritesApi.remove(checkResponse.data.favoriteId);
           setFavorites((prev) => {
@@ -155,161 +161,240 @@ export default function PropertiesPage() {
     setPage(1);
   };
 
+  // Filter content component for reuse
+  const FilterContent = ({ inDrawer = false }: { inDrawer?: boolean }) => (
+    <div className={inDrawer ? 'space-y-4' : 'grid gap-4 md:grid-cols-4'}>
+      <div>
+        <Label>Ville</Label>
+        <Input
+          placeholder="Paris, Lyon..."
+          value={filters.city}
+          onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+          className="mt-1.5"
+        />
+      </div>
+      <div>
+        <Label>Type de bien</Label>
+        <Select
+          value={filters.type || 'all'}
+          onValueChange={(value) => setFilters({ ...filters, type: value === 'all' ? '' : value })}
+        >
+          <SelectTrigger className="mt-1.5">
+            <SelectValue placeholder="Tous les types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les types</SelectItem>
+            {propertyTypes.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Transaction</Label>
+        <Select
+          value={filters.listingType || 'all'}
+          onValueChange={(value) => setFilters({ ...filters, listingType: value === 'all' ? '' : value })}
+        >
+          <SelectTrigger className="mt-1.5">
+            <SelectValue placeholder="Vente/Location" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes</SelectItem>
+            {listingTypes.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className={inDrawer ? 'grid grid-cols-2 gap-4' : ''}>
+        <div>
+          <Label>Prix min</Label>
+          <Input
+            type="number"
+            placeholder="0"
+            value={filters.minPrice}
+            onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
+            className="mt-1.5"
+          />
+        </div>
+        {inDrawer && (
+          <div>
+            <Label>Prix max</Label>
+            <Input
+              type="number"
+              placeholder="1000000"
+              value={filters.maxPrice}
+              onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+              className="mt-1.5"
+            />
+          </div>
+        )}
+      </div>
+      {!inDrawer && (
+        <div>
+          <Label>Prix max</Label>
+          <Input
+            type="number"
+            placeholder="1000000"
+            value={filters.maxPrice}
+            onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
+            className="mt-1.5"
+          />
+        </div>
+      )}
+      <div className={inDrawer ? 'grid grid-cols-2 gap-4' : ''}>
+        <div>
+          <Label>Surface min (m²)</Label>
+          <Input
+            type="number"
+            placeholder="0"
+            value={filters.minSurface}
+            onChange={(e) => setFilters({ ...filters, minSurface: e.target.value })}
+            className="mt-1.5"
+          />
+        </div>
+        {inDrawer && (
+          <div>
+            <Label>Surface max (m²)</Label>
+            <Input
+              type="number"
+              placeholder="500"
+              value={filters.maxSurface}
+              onChange={(e) => setFilters({ ...filters, maxSurface: e.target.value })}
+              className="mt-1.5"
+            />
+          </div>
+        )}
+      </div>
+      {!inDrawer && (
+        <div>
+          <Label>Surface max (m²)</Label>
+          <Input
+            type="number"
+            placeholder="500"
+            value={filters.maxSurface}
+            onChange={(e) => setFilters({ ...filters, maxSurface: e.target.value })}
+            className="mt-1.5"
+          />
+        </div>
+      )}
+      <div className={`flex gap-2 ${inDrawer ? 'mt-6' : 'md:col-span-4 mt-4 justify-end'}`}>
+        <Button variant="outline" onClick={clearFilters} className={inDrawer ? 'flex-1' : ''}>
+          <X className="mr-2 h-4 w-4" />
+          Effacer
+        </Button>
+        <Button onClick={() => { handleSearch(); setShowFilters(false); }} className={inDrawer ? 'flex-1' : ''}>
+          Appliquer
+        </Button>
+      </div>
+    </div>
+  );
+
+  const activeFiltersCount = [
+    filters.city,
+    filters.type,
+    filters.listingType,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.minSurface,
+    filters.maxSurface,
+  ].filter(Boolean).length;
+
   return (
-    <div className="container py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Annonces immobilières</h1>
-        <p className="text-muted-foreground">
+    <div className="container py-4 sm:py-8">
+      {/* Header */}
+      <div className="mb-4 sm:mb-8">
+        <h1 className="text-2xl font-bold sm:text-3xl">Annonces immobilières</h1>
+        <p className="text-sm text-muted-foreground sm:text-base">
           {total} annonce{total > 1 ? 's' : ''} disponible{total > 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6 flex flex-col gap-4 md:flex-row">
-        <div className="flex flex-1 gap-2">
+      <div className="mb-4 flex gap-2 sm:mb-6">
+        <div className="relative flex-1">
           <Input
             placeholder="Rechercher..."
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            className="h-11 pr-10 sm:h-10"
           />
-          <Button onClick={handleSearch}>
+          <Button
+            size="icon"
+            variant="ghost"
+            onClick={handleSearch}
+            className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+          >
             <Search className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Mobile: Icon button with badge, Desktop: Full button */}
         <Button
           variant="outline"
           onClick={() => setShowFilters(!showFilters)}
-          className="md:w-auto"
+          className="relative h-11 w-11 sm:h-10 sm:w-auto sm:px-4"
         >
-          <Filter className="mr-2 h-4 w-4" />
-          Filtres
+          <SlidersHorizontal className="h-4 w-4 sm:mr-2" />
+          <span className="hidden sm:inline">Filtres</span>
+          {activeFiltersCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground sm:static sm:ml-2 sm:h-auto sm:w-auto sm:rounded sm:bg-primary/20 sm:px-1.5 sm:py-0.5 sm:text-xs sm:text-primary">
+              {activeFiltersCount}
+            </span>
+          )}
         </Button>
       </div>
 
-      {/* Filters Panel */}
+      {/* Desktop Filters Panel */}
       {showFilters && (
-        <Card className="mb-6">
+        <Card className="mb-6 hidden md:block">
           <CardContent className="p-6">
-            <div className="grid gap-4 md:grid-cols-4">
-              <div>
-                <Label>Ville</Label>
-                <Input
-                  placeholder="Paris, Lyon..."
-                  value={filters.city}
-                  onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Type de bien</Label>
-                <Select
-                  value={filters.type}
-                  onValueChange={(value) => setFilters({ ...filters, type: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tous les types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Tous les types</SelectItem>
-                    {propertyTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Transaction</Label>
-                <Select
-                  value={filters.listingType}
-                  onValueChange={(value) => setFilters({ ...filters, listingType: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Vente/Location" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Toutes</SelectItem>
-                    {listingTypes.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Prix min</Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={filters.minPrice}
-                  onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Prix max</Label>
-                <Input
-                  type="number"
-                  placeholder="1000000"
-                  value={filters.maxPrice}
-                  onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Surface min (m²)</Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={filters.minSurface}
-                  onChange={(e) => setFilters({ ...filters, minSurface: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Surface max (m²)</Label>
-                <Input
-                  type="number"
-                  placeholder="500"
-                  value={filters.maxSurface}
-                  onChange={(e) => setFilters({ ...filters, maxSurface: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" onClick={clearFilters}>
-                <X className="mr-2 h-4 w-4" />
-                Effacer
-              </Button>
-              <Button onClick={handleSearch}>Appliquer</Button>
-            </div>
+            <FilterContent />
           </CardContent>
         </Card>
       )}
 
+      {/* Mobile Filters Drawer */}
+      <Drawer
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+        title="Filtres"
+      >
+        <div className="md:hidden">
+          <FilterContent inDrawer />
+        </div>
+      </Drawer>
+
       {/* Results */}
       {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <Card key={i} className="animate-pulse">
               <div className="aspect-[4/3] bg-muted" />
-              <CardContent className="p-4">
-                <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
-                <div className="mb-3 h-4 w-1/2 rounded bg-muted" />
-                <div className="h-6 w-1/3 rounded bg-muted" />
+              <CardContent className="p-3 sm:p-4">
+                <div className="mb-2 h-4 w-3/4 rounded bg-muted sm:h-5" />
+                <div className="mb-2 h-3 w-1/2 rounded bg-muted sm:mb-3 sm:h-4" />
+                <div className="h-5 w-1/3 rounded bg-muted sm:h-6" />
               </CardContent>
             </Card>
           ))}
         </div>
       ) : properties.length === 0 ? (
         <div className="py-12 text-center">
-          <p className="text-lg text-muted-foreground">Aucune annonce trouvée</p>
+          <p className="text-base text-muted-foreground sm:text-lg">Aucune annonce trouvée</p>
           <Button variant="outline" className="mt-4" onClick={clearFilters}>
             Effacer les filtres
           </Button>
         </div>
       ) : (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {properties.map((property) => (
               <PropertyCard
                 key={property.id}
@@ -322,7 +407,7 @@ export default function PropertiesPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="mt-8 flex justify-center">
+            <div className="mt-6 flex justify-center sm:mt-8">
               <Pagination
                 currentPage={page}
                 totalPages={totalPages}
@@ -334,5 +419,35 @@ export default function PropertiesPage() {
         </>
       )}
     </div>
+  );
+}
+
+function PropertiesPageLoading() {
+  return (
+    <div className="container py-4 sm:py-8">
+      <div className="mb-4 sm:mb-8">
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="mt-2 h-4 w-32 animate-pulse rounded bg-muted" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <div key={i} className="animate-pulse rounded-lg border bg-card">
+            <div className="aspect-[4/3] bg-muted" />
+            <div className="p-3 sm:p-4">
+              <div className="mb-2 h-4 w-3/4 rounded bg-muted" />
+              <div className="h-5 w-1/3 rounded bg-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function PropertiesPage() {
+  return (
+    <Suspense fallback={<PropertiesPageLoading />}>
+      <PropertiesContent />
+    </Suspense>
   );
 }

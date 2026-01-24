@@ -80,7 +80,7 @@ export default function PropertyDetailPage() {
 
   const checkFavorite = async () => {
     try {
-      const response = await favoritesApi.check(property.id);
+      const response = await favoritesApi.check({ propertyId: property.id });
       setIsFavorite(response.data.isFavorite);
       setFavoriteId(response.data.favoriteId || null);
     } catch (error) {
@@ -153,7 +153,19 @@ export default function PropertyDetailPage() {
   }
 
   if (!property) {
-    return null;
+    return (
+      <div className="container py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold">Annonce non trouvée</h1>
+          <p className="mt-2 text-muted-foreground">
+            Cette annonce n'existe pas ou a été supprimée.
+          </p>
+          <Button className="mt-4" onClick={() => router.push('/properties')}>
+            Retour aux annonces
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const isRent = property.listingType === 'RENT';
@@ -388,6 +400,9 @@ export default function PropertyDetailPage() {
                         <p className="text-sm font-medium">{property.title}</p>
                         <p className="text-sm text-muted-foreground">{formatPrice(property.price, isRent)}</p>
                       </div>
+                      <p className="text-sm text-muted-foreground">
+                        Une nouvelle conversation sera créée avec le vendeur. Vous pourrez suivre vos échanges depuis votre messagerie.
+                      </p>
                       <Textarea
                         placeholder="Bonjour, je suis intéressé par votre annonce..."
                         value={contactMessage}
@@ -400,7 +415,7 @@ export default function PropertyDetailPage() {
                         disabled={!contactMessage.trim() || isSendingMessage}
                       >
                         <Send className="mr-2 h-4 w-4" />
-                        {isSendingMessage ? 'Envoi...' : 'Envoyer le message'}
+                        {isSendingMessage ? 'Envoi...' : 'Démarrer la conversation'}
                       </Button>
                     </div>
                   </DialogContent>
