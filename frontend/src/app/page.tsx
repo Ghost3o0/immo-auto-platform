@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Search,
   Home,
@@ -18,10 +18,11 @@ import {
   Edit,
   Heart,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   MessageCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Autocomplete } from '@/components/ui/autocomplete';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -133,6 +134,106 @@ const faqs = [
   },
 ];
 
+// Composant Carousel
+function Carousel({
+  children,
+  title,
+  subtitle,
+  viewAllLink,
+  icon: Icon
+}: {
+  children: React.ReactNode;
+  title: string;
+  subtitle: string;
+  viewAllLink: string;
+  icon: React.ElementType;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const ref = scrollRef.current;
+    if (ref) {
+      ref.addEventListener('scroll', checkScroll);
+      return () => ref.removeEventListener('scroll', checkScroll);
+    }
+  }, []);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = 320;
+      scrollRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  return (
+    <div className="py-8">
+      <div className="container">
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+              <Icon className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold md:text-2xl">{title}</h2>
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="hidden gap-2 md:flex">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => scroll('left')}
+                disabled={!canScrollLeft}
+                className="h-8 w-8"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => scroll('right')}
+                disabled={!canScrollRight}
+                className="h-8 w-8"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={viewAllLink}>
+                Voir tout
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState<'properties' | 'vehicles'>('properties');
@@ -174,8 +275,8 @@ export default function HomePage() {
   const loadLatestListings = async () => {
     try {
       const [propertiesRes, vehiclesRes] = await Promise.all([
-        propertiesApi.getAll({ limit: 4, sortBy: 'createdAt', sortOrder: 'desc' }),
-        vehiclesApi.getAll({ limit: 4, sortBy: 'createdAt', sortOrder: 'desc' }),
+        propertiesApi.getAll({ limit: 8, sortBy: 'createdAt', sortOrder: 'desc' }),
+        vehiclesApi.getAll({ limit: 8, sortBy: 'createdAt', sortOrder: 'desc' }),
       ]);
       setLatestProperties(propertiesRes.data);
       setLatestVehicles(vehiclesRes.data);
@@ -195,7 +296,7 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative min-h-[600px] py-20">
+      <section className="relative min-h-[400px] py-12 md:min-h-[500px] md:py-16">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -208,16 +309,15 @@ export default function HomePage() {
         </div>
         <div className="container relative z-10">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+            <h1 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
               Trouvez votre bien idéal
             </h1>
-            <p className="mb-8 text-lg text-muted-foreground">
-              Explorez des milliers d'annonces immobilières et de véhicules. Achetez, vendez ou
-              louez en toute simplicité.
+            <p className="mb-6 text-muted-foreground md:text-lg">
+              Explorez des milliers d'annonces immobilières et de véhicules.
             </p>
 
             {/* Search Box */}
-            <Card className="p-6">
+            <Card className="p-4 md:p-6">
               <Tabs
                 defaultValue="properties"
                 onValueChange={(v) => setSearchType(v as 'properties' | 'vehicles')}
@@ -234,18 +334,18 @@ export default function HomePage() {
                 </TabsList>
 
                 <TabsContent value="properties">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <div className="flex-1">
                       <Autocomplete
                         value={searchQuery}
                         onChange={setSearchQuery}
                         onSelect={handleSearch}
                         suggestions={suggestions}
-                        placeholder="Ville, type de bien, mots-clés..."
+                        placeholder="Ville, type de bien..."
                         isLoading={isLoadingSuggestions}
                       />
                     </div>
-                    <Button onClick={handleSearch}>
+                    <Button onClick={handleSearch} className="w-full sm:w-auto">
                       <Search className="mr-2 h-4 w-4" />
                       Rechercher
                     </Button>
@@ -253,18 +353,18 @@ export default function HomePage() {
                 </TabsContent>
 
                 <TabsContent value="vehicles">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row">
                     <div className="flex-1">
                       <Autocomplete
                         value={searchQuery}
                         onChange={setSearchQuery}
                         onSelect={handleSearch}
                         suggestions={suggestions}
-                        placeholder="Marque, modèle, mots-clés..."
+                        placeholder="Marque, modèle..."
                         isLoading={isLoadingSuggestions}
                       />
                     </div>
-                    <Button onClick={handleSearch}>
+                    <Button onClick={handleSearch} className="w-full sm:w-auto">
                       <Search className="mr-2 h-4 w-4" />
                       Rechercher
                     </Button>
@@ -276,8 +376,68 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Latest Properties Carousel */}
+      <Carousel
+        title="Annonces immobilières"
+        subtitle="Découvrez les derniers biens"
+        viewAllLink="/properties"
+        icon={Home}
+      >
+        {isLoading ? (
+          [...Array(4)].map((_, i) => (
+            <div key={i} className="w-[280px] flex-shrink-0 snap-start md:w-[300px]">
+              <Card className="animate-pulse">
+                <div className="aspect-[4/3] bg-muted" />
+                <CardContent className="p-4">
+                  <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
+                  <div className="mb-3 h-4 w-1/2 rounded bg-muted" />
+                  <div className="h-6 w-1/3 rounded bg-muted" />
+                </CardContent>
+              </Card>
+            </div>
+          ))
+        ) : (
+          latestProperties.map((property) => (
+            <div key={property.id} className="w-[280px] flex-shrink-0 snap-start md:w-[300px]">
+              <PropertyCard property={property} />
+            </div>
+          ))
+        )}
+      </Carousel>
+
+      {/* Latest Vehicles Carousel */}
+      <div className="bg-muted/30">
+        <Carousel
+          title="Annonces véhicules"
+          subtitle="Trouvez le véhicule parfait"
+          viewAllLink="/vehicles"
+          icon={Car}
+        >
+          {isLoading ? (
+            [...Array(4)].map((_, i) => (
+              <div key={i} className="w-[280px] flex-shrink-0 snap-start md:w-[300px]">
+                <Card className="animate-pulse">
+                  <div className="aspect-[4/3] bg-muted" />
+                  <CardContent className="p-4">
+                    <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
+                    <div className="mb-3 h-4 w-1/2 rounded bg-muted" />
+                    <div className="h-6 w-1/3 rounded bg-muted" />
+                  </CardContent>
+                </Card>
+              </div>
+            ))
+          ) : (
+            latestVehicles.map((vehicle) => (
+              <div key={vehicle.id} className="w-[280px] flex-shrink-0 snap-start md:w-[300px]">
+                <VehicleCard vehicle={vehicle} />
+              </div>
+            ))
+          )}
+        </Carousel>
+      </div>
+
       {/* Stats Section */}
-      <section className="border-b bg-muted/30 py-12">
+      <section className="border-b py-12">
         <div className="container">
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {stats.map((stat) => (
@@ -295,8 +455,68 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Quick Categories */}
+      <section className="py-12">
+        <div className="container">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Link href="/properties?listingType=SALE">
+              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
+                <CardContent className="flex items-center gap-4 p-4 md:p-6">
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <Home className="h-5 w-5 text-primary md:h-6 md:w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Acheter un bien</h3>
+                    <p className="text-sm text-muted-foreground">Immobilier à vendre</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/properties?listingType=RENT">
+              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
+                <CardContent className="flex items-center gap-4 p-4 md:p-6">
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <Home className="h-5 w-5 text-primary md:h-6 md:w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Louer un bien</h3>
+                    <p className="text-sm text-muted-foreground">Immobilier à louer</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/vehicles?listingType=SALE">
+              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
+                <CardContent className="flex items-center gap-4 p-4 md:p-6">
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <Car className="h-5 w-5 text-primary md:h-6 md:w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Acheter un véhicule</h3>
+                    <p className="text-sm text-muted-foreground">Véhicules à vendre</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/vehicles?listingType=RENT">
+              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
+                <CardContent className="flex items-center gap-4 p-4 md:p-6">
+                  <div className="rounded-lg bg-primary/10 p-3">
+                    <Car className="h-5 w-5 text-primary md:h-6 md:w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Louer un véhicule</h3>
+                    <p className="text-sm text-muted-foreground">Véhicules à louer</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works Section */}
-      <section className="py-16">
+      <section className="bg-muted/30 py-16">
         <div className="container">
           <div className="mb-12 text-center">
             <h2 className="mb-4 text-3xl font-bold">Comment ça marche ?</h2>
@@ -321,146 +541,6 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Quick Categories */}
-      <section className="bg-muted/30 py-12">
-        <div className="container">
-          <div className="grid gap-4 md:grid-cols-4">
-            <Link href="/properties?listingType=SALE">
-              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <Home className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Acheter un bien</h3>
-                    <p className="text-sm text-muted-foreground">Immobilier à vendre</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href="/properties?listingType=RENT">
-              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <Home className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Louer un bien</h3>
-                    <p className="text-sm text-muted-foreground">Immobilier à louer</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href="/vehicles?listingType=SALE">
-              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <Car className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Acheter un véhicule</h3>
-                    <p className="text-sm text-muted-foreground">Véhicules à vendre</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-            <Link href="/vehicles?listingType=RENT">
-              <Card className="cursor-pointer transition-all hover:shadow-md hover:-translate-y-1">
-                <CardContent className="flex items-center gap-4 p-6">
-                  <div className="rounded-lg bg-primary/10 p-3">
-                    <Car className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Louer un véhicule</h3>
-                    <p className="text-sm text-muted-foreground">Véhicules à louer</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Latest Properties */}
-      <section className="py-16">
-        <div className="container">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Dernières annonces immobilières</h2>
-              <p className="text-muted-foreground">
-                Découvrez les derniers biens ajoutés sur notre plateforme
-              </p>
-            </div>
-            <Button variant="outline" asChild>
-              <Link href="/properties">
-                Voir tout
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          {isLoading ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="aspect-[4/3] bg-muted" />
-                  <CardContent className="p-4">
-                    <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
-                    <div className="mb-3 h-4 w-1/2 rounded bg-muted" />
-                    <div className="h-6 w-1/3 rounded bg-muted" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {latestProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Latest Vehicles */}
-      <section className="bg-muted/30 py-16">
-        <div className="container">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Dernières annonces véhicules</h2>
-              <p className="text-muted-foreground">
-                Trouvez le véhicule parfait parmi nos dernières annonces
-              </p>
-            </div>
-            <Button variant="outline" asChild>
-              <Link href="/vehicles">
-                Voir tout
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          {isLoading ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <div className="aspect-[4/3] bg-muted" />
-                  <CardContent className="p-4">
-                    <div className="mb-2 h-5 w-3/4 rounded bg-muted" />
-                    <div className="mb-3 h-4 w-1/2 rounded bg-muted" />
-                    <div className="h-6 w-1/3 rounded bg-muted" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {latestVehicles.map((vehicle) => (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} />
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
