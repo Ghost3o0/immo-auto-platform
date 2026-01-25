@@ -38,11 +38,12 @@ async function main() {
     },
   });
 
+  const adminPassword = await bcrypt.hash('Admin2026Secure', 10);
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@example.com',
-      password: hashedPassword,
-      name: 'Admin System',
+      email: 'admin@immo-auto.com',
+      password: adminPassword,
+      name: 'Administrateur',
       phone: '+33698765432',
       role: UserRole.ADMIN,
     },
@@ -465,7 +466,7 @@ async function main() {
   console.log('Seeding completed!');
   console.log('\nTest accounts:');
   console.log('- User: user@example.com / Password123!');
-  console.log('- Admin: admin@example.com / Password123!');
+  console.log('- Admin: admin@immo-auto.com / Admin2026Secure');
 }
 
 main()
