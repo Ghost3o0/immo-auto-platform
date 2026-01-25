@@ -36,10 +36,11 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-muted/30">
+    <div className="flex min-h-screen bg-muted/30">
       <AdminSidebar />
       <main className="flex-1 overflow-y-auto">
-        <div className="p-6 lg:p-8">{children}</div>
+        {/* Padding top pour le bouton hamburger sur mobile */}
+        <div className="p-4 pt-16 lg:p-6 lg:pt-6">{children}</div>
       </main>
     </div>
   );

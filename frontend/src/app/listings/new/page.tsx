@@ -64,21 +64,17 @@ type VehicleFormData = z.infer<typeof vehicleSchema>;
 const propertyTypes = [
   { value: 'APARTMENT', label: 'Appartement' },
   { value: 'HOUSE', label: 'Maison' },
-  { value: 'VILLA', label: 'Villa' },
-  { value: 'STUDIO', label: 'Studio' },
-  { value: 'LOFT', label: 'Loft' },
   { value: 'LAND', label: 'Terrain' },
   { value: 'COMMERCIAL', label: 'Local commercial' },
-  { value: 'OFFICE', label: 'Bureau' },
+  { value: 'OTHER', label: 'Autre' },
 ];
 
 const vehicleTypes = [
   { value: 'CAR', label: 'Voiture' },
   { value: 'MOTORCYCLE', label: 'Moto' },
-  { value: 'TRUCK', label: 'Utilitaire' },
-  { value: 'VAN', label: 'Camion' },
-  { value: 'SUV', label: 'SUV' },
-  { value: 'SCOOTER', label: 'Scooter' },
+  { value: 'TRUCK', label: 'Camion' },
+  { value: 'VAN', label: 'Utilitaire' },
+  { value: 'OTHER', label: 'Autre' },
 ];
 
 const fuelTypes = [
@@ -87,12 +83,12 @@ const fuelTypes = [
   { value: 'ELECTRIC', label: 'Électrique' },
   { value: 'HYBRID', label: 'Hybride' },
   { value: 'LPG', label: 'GPL' },
+  { value: 'OTHER', label: 'Autre' },
 ];
 
 const transmissions = [
   { value: 'MANUAL', label: 'Manuelle' },
   { value: 'AUTOMATIC', label: 'Automatique' },
-  { value: 'SEMI_AUTOMATIC', label: 'Semi-automatique' },
 ];
 
 function NewListingContent() {
