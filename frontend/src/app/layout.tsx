@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: 'Immo-Auto - Immobilier et Véhicules',
   description: 'Plateforme de vente et location d\'immobilier et de véhicules',
   manifest: '/manifest.json',
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
 
 export const viewport: Viewport = {
