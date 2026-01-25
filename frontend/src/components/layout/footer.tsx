@@ -86,11 +86,15 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-center space-x-2">
                 <Mail className="h-4 w-4" />
-                <span>contact@immo-auto.fr</span>
+                <a href="mailto:randrianandrasanasylvano@gmail.com" className="hover:text-primary">
+                  randrianandrasanasylvano@gmail.com
+                </a>
               </li>
               <li className="flex items-center space-x-2">
                 <Phone className="h-4 w-4" />
-                <span>01 23 45 67 89</span>
+                <a href="tel:+261341788780" className="hover:text-primary">
+                  +261 34 17 887 80
+                </a>
               </li>
             </ul>
           </div>
